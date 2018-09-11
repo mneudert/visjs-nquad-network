@@ -23,7 +23,15 @@
   </head>
 
   <body>
-    <form onsubmit="visualize(); return false;"><input name="nquad" value="/testdata.nq"></form>
+    <form onsubmit="visualize(); return false;">
+      <input name="nquad" value="/testdata.nq">
+      <br>
+      <textarea name="coloring" cols=20 rows=5></textarea>
+
+      <script type="text/javascript">
+        document.querySelector('textarea[name="coloring"]').value = '\<.*\>~~~#FF0000\n".*"~~~#00FF00';
+      </script>
+    </form>
     <div id="network"></div>
 
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis-network.min.js"></script>
@@ -57,8 +65,32 @@
         nodes.add({
           id: id,
           label: id.slice(1, -1),
-          shape: '<' === id[0] ? 'box' : 'ellipse'
+          shape: '<' === id[0] ? 'box' : 'ellipse',
+
+          color: getNodeColor(id)
         });
+      }
+
+      function getNodeColor(id) {
+        var colors = document.querySelector('textarea[name="coloring"]').value.trim().match(/[^\r\n]+/g);
+
+        if (!colors) {
+          return null;
+        }
+
+        for (var index in colors) {
+          var colorDef = colors[index].split('~~~');
+
+          if (2 !== colorDef.length) {
+            return;
+          }
+
+          if (!(new RegExp(colorDef[0])).test(id)) {
+            continue;
+          }
+
+          return colorDef[1];
+        }
       }
 
       function resetNetwork() {
