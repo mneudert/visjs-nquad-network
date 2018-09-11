@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <style type="text/css">
+      #network {
+        position: absolute;
+        z-index: 0;
+
+        bottom: 0;
+        left: 0;
+        right: 0;
+        top: 0;
+      }
+
+      form {
+        position: absolute;
+        z-index: 1;
+
+        left: 20px;
+        top: 20px;
+      }
+    </style>
+  </head>
+
+  <body>
+    <form onsubmit="visualize(); return false;"><input name="nquad" value="/testdata.nq"></form>
+    <div id="network"></div>
+
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis-network.min.js"></script>
+    <script type="text/javascript">
+      var network;
+      var edges = new vis.DataSet()
+      var nodes = new vis.DataSet();
+
+      function addEdge(from, to, type) {
+        var id = `${from}-${to}-${type}`;
+
+        if (edges.get(id)) {
+          return;
+        }
+
+        edges.add({
+          id: id,
+          from: from,
+          to: to,
+
+          label: type.slice(1, -1),
+          font: {align: 'bottom'}
+        });
+      }
+
+      function addNode(id) {
+        if (nodes.get(id)) {
+          return;
+        }
+
+        nodes.add({
+          id: id,
+          label: id.slice(1, -1),
+          shape: '<' === id[0] ? 'box' : 'ellipse'
+        });
+      }
+
+      function resetNetwork() {
+        if (!network) {
+          network = new vis.Network(
+            document.getElementById('network'),
+            {
+              edges: edges,
+              nodes: nodes
+            },
+            {
+              edges: {
+                length: 100
+              },
+              nodes: {
+                size: 25
+              }
+            }
+          );
+        }
+
+        edges.clear();
+        nodes.clear();
+      }
+
+      function visualize() {
+        var nquadLocation = document.querySelector('input[name="nquad"]').value;
+
+        if (!nquadLocation) {
+          return;
+        }
+
+        var xhr = new XMLHttpRequest();
+
+        xhr.open('GET', nquadLocation);
+
+        xhr.onload = function() {
+          if (200 !== xhr.status || !xhr.responseText) {
+            return;
+          }
+
+          visualizeData(xhr.responseText);
+        };
+
+        xhr.send();
+      }
+
+      function visualizeData(data) {
+        resetNetwork();
+
+        data.match(/[^\r\n]+/g).forEach(function(nquadLine) {
+          nquadLine = nquadLine.trim();
+
+          if (!nquadLine || '#' === nquadLine[0]) {
+            return;
+          }
+
+          var nquadData = nquadLine.match(/([<"].*?[>"]) ([<"].*?[>"]) ([<"].*?[>"])( ([<"].*?[>"]))? .$/);
+
+          var from = nquadData[1];
+          var to = nquadData[3];
+          var type = nquadData[2];
+
+          addNode(from);
+          addNode(to);
+          addEdge(from, to, type);
+        });
+      }
+    </script>
+  </body>
+</html>
